@@ -1,27 +1,27 @@
-import * as THREE from 'three';
-import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
-import { World } from './world';
-import { blocks } from './blocks';
+import * as THREE from 'three'
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js'
+import { World } from './world'
+import { blocks } from './blocks'
 
-const CENTER_SCREEN = new THREE.Vector2();
+const CENTER_SCREEN = new THREE.Vector2()
 
 export class Player {
-  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-  cameraHelper = new THREE.CameraHelper(this.camera);
-  controls = new PointerLockControls(this.camera, document.body);
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100)
+  cameraHelper = new THREE.CameraHelper(this.camera)
+  controls = new PointerLockControls(this.camera, document.body)
 
-  height = 1.75;
-  radius = 0.5;
-  maxSpeed = 5;
-  jumpSpeed = 10;
-  onGround = false;
-  velocity = new THREE.Vector3();
-  #worldVelocity = new THREE.Vector3();
-  input = new THREE.Vector3();
+  height = 1.75
+  radius = 0.5
+  maxSpeed = 5
+  jumpSpeed = 10
+  onGround = false
+  velocity = new THREE.Vector3()
+  #worldVelocity = new THREE.Vector3()
+  input = new THREE.Vector3()
 
-  raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(), 0, 3);
-  selectedCoords = null;
-  activeBlockId = blocks.empty.id;
+  raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(), 0, 3)
+  selectedCoords = null
+  activeBlockId = blocks.empty.id
   
   tool = {
     // Group that will contain the tool mesh
@@ -37,52 +37,52 @@ export class Player {
   }
 
   constructor(scene, world) {
-    this.world = world;
-    this.position.set(32, 32, 32);
-    this.cameraHelper.visible = false;
-    scene.add(this.camera);
-    scene.add(this.cameraHelper);
+    this.world = world
+    this.position.set(0, 32, 0)
+    this.cameraHelper.visible = false
+    scene.add(this.camera)
+    scene.add(this.cameraHelper)
 
     // Hide/show instructions based on pointer controls locking/unlocking
     this.controls.addEventListener('lock', function () {
-      console.log('locked');
-      document.getElementById('overlay').style.visibility = 'hidden';
-    });
+      console.log('locked')
+      document.getElementById('overlay').style.visibility = 'hidden'
+    })
 
     this.controls.addEventListener('unlock', function () {
-      document.getElementById('overlay').style.visibility = 'visible';
-    });
+      document.getElementById('overlay').style.visibility = 'visible'
+    })
 
 
     // The tool is parented to the camera
-    this.camera.add(this.tool.container);
+    this.camera.add(this.tool.container)
 
     // Set raycaster to use layer 0 so it doesn't interact with water mesh on layer 1
-    this.raycaster.layers.set(0);
-    this.camera.layers.enable(1);
+    this.raycaster.layers.set(0)
+    this.camera.layers.enable(1)
 
     // Wireframe mesh visualizing the player's bounding cylinder
     this.boundsHelper = new THREE.Mesh(
       new THREE.CylinderGeometry(this.radius, this.radius, this.height, 16),
       new THREE.MeshBasicMaterial({ wireframe: true })
-    );
-    this.boundsHelper.visible = false;
-    scene.add(this.boundsHelper);
+    )
+    this.boundsHelper.visible = false
+    scene.add(this.boundsHelper)
 
     // Helper used to highlight the currently active block
     const selectionMaterial = new THREE.MeshBasicMaterial({
       transparent: true,
       opacity: 0.3,
       color: 0xffffaa
-    });
-    const selectionGeometry = new THREE.BoxGeometry(1.01, 1.01, 1.01);
-    this.selectionHelper = new THREE.Mesh(selectionGeometry, selectionMaterial);
-    scene.add(this.selectionHelper);
+    })
+    const selectionGeometry = new THREE.BoxGeometry(1.01, 1.01, 1.01)
+    this.selectionHelper = new THREE.Mesh(selectionGeometry, selectionMaterial)
+    scene.add(this.selectionHelper)
 
     // Add event listeners for keyboard/mouse events
-    document.addEventListener('keyup', this.onKeyUp.bind(this));
-    document.addEventListener('keydown', this.onKeyDown.bind(this));
-    document.addEventListener('mousedown', this.onMouseDown.bind(this));
+    document.addEventListener('keyup', this.onKeyUp.bind(this))
+    document.addEventListener('keydown', this.onKeyDown.bind(this))
+    document.addEventListener('mousedown', this.onMouseDown.bind(this))
   }
   
   /**
@@ -90,11 +90,11 @@ export class Player {
    * @param {World} world 
    */
   update(world) {
-    this.updateBoundsHelper();
-    this.updateRaycaster(world);
+    this.updateBoundsHelper()
+    this.updateRaycaster(world)
 
     if (this.tool.animate) {
-      this.updateToolAnimation();
+      this.updateToolAnimation()
     }
   }
 
@@ -103,36 +103,36 @@ export class Player {
    * @param {World} world 
    */
   updateRaycaster(world) {
-    this.raycaster.setFromCamera(CENTER_SCREEN, this.camera);
-    const intersections = this.raycaster.intersectObject(world, true);
+    this.raycaster.setFromCamera(CENTER_SCREEN, this.camera)
+    const intersections = this.raycaster.intersectObject(world, true)
   
     if (intersections.length > 0) {
-      const intersection = intersections[0];
+      const intersection = intersections[0]
 
       // Get the chunk associated with the selected block
-      const chunk = intersection.object.parent;
+      const chunk = intersection.object.parent
 
       // Get the transformation matrix for the selected block
-      const blockMatrix = new THREE.Matrix4();
-      intersection.object.getMatrixAt(intersection.instanceId, blockMatrix);
+      const blockMatrix = new THREE.Matrix4()
+      intersection.object.getMatrixAt(intersection.instanceId, blockMatrix)
 
       // Set the selected coordinates to the origin of the chunk,
       // then apply the transformation matrix of the block to get
       // the block coordinates
-      this.selectedCoords = chunk.position.clone();
-      this.selectedCoords.applyMatrix4(blockMatrix);
+      this.selectedCoords = chunk.position.clone()
+      this.selectedCoords.applyMatrix4(blockMatrix)
 
       if (this.activeBlockId !== blocks.empty.id) {
         // If we are adding a block, move it 1 block over in the direction
         // of where the ray intersected the cube
-        this.selectedCoords.add(intersection.normal);
+        this.selectedCoords.add(intersection.normal)
       }
 
-      this.selectionHelper.position.copy(this.selectedCoords);
-      this.selectionHelper.visible = true;
+      this.selectionHelper.position.copy(this.selectedCoords)
+      this.selectionHelper.visible = true
     } else {
-      this.selectedCoords = null;
-      this.selectionHelper.visible = false;
+      this.selectedCoords = null
+      this.selectionHelper.visible = false
     }
   }
 
@@ -142,27 +142,27 @@ export class Player {
    */
   applyInputs(dt) {
     if (this.controls.isLocked === true) {
-      this.velocity.x = this.input.x;
-      this.velocity.z = this.input.z;
-      this.controls.moveRight(this.velocity.x * dt);
-      this.controls.moveForward(this.velocity.z * dt);
-      this.position.y += this.velocity.y * dt;
+      this.velocity.x = this.input.x
+      this.velocity.z = this.input.z
+      this.controls.moveRight(this.velocity.x * dt)
+      this.controls.moveForward(this.velocity.z * dt)
+      this.position.y += this.velocity.y * dt
 
       if (this.position.y < 0) {
-        this.position.y = 0;
-        this.velocity.y = 0;
+        this.position.y = 0
+        this.velocity.y = 0
       }
     }
     
-    document.getElementById('info-player-position').innerHTML = this.toString();
+    document.getElementById('info-player-position').innerHTML = this.toString()
   }
 
   /**
    * Updates the position of the player's bounding cylinder helper
    */
   updateBoundsHelper() {
-    this.boundsHelper.position.copy(this.camera.position);
-    this.boundsHelper.position.y -= this.height / 2;
+    this.boundsHelper.position.copy(this.camera.position)
+    this.boundsHelper.position.y -= this.height / 2
   }
 
   /**
@@ -170,15 +170,15 @@ export class Player {
    * @param {THREE.Mesh} tool 
    */
   setTool(tool) {
-    this.tool.container.clear();
-    this.tool.container.add(tool);
-    this.tool.container.receiveShadow = true;
-    this.tool.container.castShadow = true;
+    this.tool.container.clear()
+    this.tool.container.add(tool)
+    this.tool.container.receiveShadow = true
+    this.tool.container.castShadow = true
   
-    this.tool.container.position.set(0.6, -0.3, -0.5);
-    this.tool.container.scale.set(0.5, 0.5, 0.5);
-    this.tool.container.rotation.z = Math.PI / 2;
-    this.tool.container.rotation.y = Math.PI + 0.2;
+    this.tool.container.position.set(0.6, -0.3, -0.5)
+    this.tool.container.scale.set(0.5, 0.5, 0.5)
+    this.tool.container.rotation.z = Math.PI / 2
+    this.tool.container.rotation.y = Math.PI + 0.2
   }
 
   /**
@@ -186,8 +186,8 @@ export class Player {
    */
   updateToolAnimation() {
     if (this.tool.container.children.length > 0) {
-      const t = this.tool.animationSpeed * (performance.now() - this.tool.animationStart);
-      this.tool.container.children[0].rotation.y = 0.5 * Math.sin(t);
+      const t = this.tool.animationSpeed * (performance.now() - this.tool.animationStart)
+      this.tool.container.children[0].rotation.y = 0.5 * Math.sin(t)
     }
   }
 
@@ -196,7 +196,7 @@ export class Player {
    * @returns {THREE.Vector3}
    */
   get position() {
-    return this.camera.position;
+    return this.camera.position
   }
 
   /**
@@ -204,9 +204,9 @@ export class Player {
    * @returns {THREE.Vector3}
    */
   get worldVelocity() {
-    this.#worldVelocity.copy(this.velocity);
-    this.#worldVelocity.applyEuler(new THREE.Euler(0, this.camera.rotation.y, 0));
-    return this.#worldVelocity;
+    this.#worldVelocity.copy(this.velocity)
+    this.#worldVelocity.applyEuler(new THREE.Euler(0, this.camera.rotation.y, 0))
+    return this.#worldVelocity
   }
 
   /**
@@ -214,8 +214,8 @@ export class Player {
    * @param {THREE.Vector3} dv 
    */
   applyWorldDeltaVelocity(dv) {
-    dv.applyEuler(new THREE.Euler(0, -this.camera.rotation.y, 0));
-    this.velocity.add(dv);
+    dv.applyEuler(new THREE.Euler(0, -this.camera.rotation.y, 0))
+    this.velocity.add(dv)
   }
 
   /**
@@ -225,17 +225,17 @@ export class Player {
   onKeyUp(event) {
     switch (event.code) {
       case 'KeyW':
-        this.input.z = 0;
-        break;
+        this.input.z = 0
+        break
       case 'KeyA':
-        this.input.x = 0;
-        break;
+        this.input.x = 0
+        break
       case 'KeyS':
-        this.input.z = 0;
-        break;
+        this.input.z = 0
+        break
       case 'KeyD':
-        this.input.x = 0;
-        break;
+        this.input.x = 0
+        break
     }
   }
 
@@ -245,7 +245,7 @@ export class Player {
    */
   onKeyDown(event) {
     if (!this.controls.isLocked) {
-      this.controls.lock();
+      this.controls.lock()
     }
 
     switch (event.code) {
@@ -259,37 +259,37 @@ export class Player {
       case 'Digit7':
       case 'Digit8':
         // Update the selected toolbar icon
-        document.getElementById(`toolbar-${this.activeBlockId}`)?.classList.remove('selected');
-        document.getElementById(`toolbar-${event.key}`)?.classList.add('selected');
+        document.getElementById(`toolbar-${this.activeBlockId}`)?.classList.remove('selected')
+        document.getElementById(`toolbar-${event.key}`)?.classList.add('selected')
 
-        this.activeBlockId = Number(event.key);
+        this.activeBlockId = Number(event.key)
 
         // Update the pickaxe visibility
-        this.tool.container.visible = (this.activeBlockId === 0);
+        this.tool.container.visible = (this.activeBlockId === 0)
 
-        break;
+        break
       case 'KeyW':
-        this.input.z = this.maxSpeed;
-        break;
+        this.input.z = this.maxSpeed
+        break
       case 'KeyA':
-        this.input.x = -this.maxSpeed;
-        break;
+        this.input.x = -this.maxSpeed
+        break
       case 'KeyS':
-        this.input.z = -this.maxSpeed;
-        break;
+        this.input.z = -this.maxSpeed
+        break
       case 'KeyD':
-        this.input.x = this.maxSpeed;
-        break;
+        this.input.x = this.maxSpeed
+        break
       case 'KeyR':
-        if (this.repeat) break;
-        this.position.y = 32;
-        this.velocity.set(0, 0, 0);
-        break;
+        if (this.repeat) break
+        this.position.y = 32
+        this.velocity.set(0, 0, 0)
+        break
       case 'Space':
         if (this.onGround) {
-          this.velocity.y += this.jumpSpeed;
+          this.velocity.y += this.jumpSpeed
         }
-        break;
+        break
     }
   }
 
@@ -307,28 +307,28 @@ export class Player {
             this.selectedCoords.x,
             this.selectedCoords.y,
             this.selectedCoords.z
-          );
+          )
         } else {
           this.world.addBlock(
             this.selectedCoords.x,
             this.selectedCoords.y,
             this.selectedCoords.z,
             this.activeBlockId
-          );
+          )
         }
 
         // If the tool isn't currently animating, trigger the animation
         if (!this.tool.animate) {
-          this.tool.animate = true;
-          this.tool.animationStart = performance.now();
+          this.tool.animate = true
+          this.tool.animationStart = performance.now()
 
           // Clear the existing timeout so it doesn't cancel our new animation
-          clearTimeout(this.tool.animation);
+          clearTimeout(this.tool.animation)
 
           // Stop the animation after 1.5 cycles
           this.tool.animation = setTimeout(() => {
-            this.tool.animate = false;
-          }, 3 * Math.PI / this.tool.animationSpeed);
+            this.tool.animate = false
+          }, 3 * Math.PI / this.tool.animationSpeed)
         }
       }
     }
@@ -339,10 +339,10 @@ export class Player {
    * @returns {string}
    */
   toString() {
-    let str = '';
-    str += `X: ${this.position.x.toFixed(3)} `;
-    str += `Y: ${this.position.y.toFixed(3)} `;
-    str += `Z: ${this.position.z.toFixed(3)}`;
-    return str;
+    let str = ''
+    str += `X: ${this.position.x.toFixed(3)} `
+    str += `Y: ${this.position.y.toFixed(3)} `
+    str += `Z: ${this.position.z.toFixed(3)}`
+    return str
   }
 }
