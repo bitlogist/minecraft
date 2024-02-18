@@ -45,8 +45,8 @@ sun.castShadow = true
 
 const geometry = new THREE.SphereGeometry(1, 32, 16)
 const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
-const planet = new THREE.Mesh(geometry, material)
-planet.position.set(new THREE.Vector3(0, 16, 0))
+const star = new THREE.Mesh(geometry, material)
+star.position.set(new THREE.Vector3(0, 16, 0))
 
 // Set the size of the sun's shadow box
 sun.shadow.camera.left = -40
@@ -59,7 +59,7 @@ sun.shadow.bias = -0.0001
 sun.shadow.mapSize = new THREE.Vector2(2048, 2048)
 scene.add(sun)
 scene.add(sun.target)
-scene.add(planet)
+scene.add(star)
 
 const ambient = new THREE.AmbientLight()
 ambient.intensity = 0.2
@@ -96,12 +96,12 @@ function animate() {
   // position and target of the sun to keep the same sun angle
   const period = 30 * 60 * 1
   const frequency = tick / period
-  const planetPosition = (new THREE.Vector3(Math.cos(frequency), Math.sin(frequency), sunPosition)).multiplyScalar(16)
+  const starPosition = (new THREE.Vector3(Math.cos(frequency), Math.sin(frequency), sunPosition)).multiplyScalar(16)
   sun.position.copy(player.camera.position)
-  sun.position.add(planetPosition)
+  sun.position.add(starPosition)
   sun.target.position.copy(player.camera.position)
-  planet.position.copy(player.camera.position)
-  planet.position.add(planetPosition)
+  star.position.copy(player.camera.position)
+  star.position.add(starPosition)
 
   // Only update physics when player controls are locked
   if (player.controls.isLocked) {
