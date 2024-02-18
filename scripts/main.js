@@ -44,7 +44,7 @@ sun.position.set(sunPosition, sunY, sunPosition)
 sun.castShadow = true
 
 const geometry = new THREE.SphereGeometry(1, 32, 16)
-const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
+const material = new THREE.MeshBasicMaterial({ color: 0xffc833 })
 const star = new THREE.Mesh(geometry, material)
 star.position.set(new THREE.Vector3(0, 16, 0))
 
@@ -62,11 +62,11 @@ scene.add(sun.target)
 scene.add(star)
 
 const ambient = new THREE.AmbientLight()
-ambient.intensity = 0.2
+ambient.intensity = 0.1
 scene.add(ambient)
 
 THREE.ShaderChunk.fog_vertex = `#ifdef USE_FOG\n\tvFogDepth = length( mvPosition );\n#endif`
-scene.fog = new THREE.Fog(0x80a0e0, 16, 32)
+scene.fog = new THREE.Fog(0x80a0e0, 32, 64)
 
 // Events
 window.addEventListener('resize', () => {
@@ -94,9 +94,9 @@ function animate() {
 
   // Position the sun relative to the player. Need to adjust both the
   // position and target of the sun to keep the same sun angle
-  const period = 30 * 60 * 1
-  const frequency = tick / period
-  const starPosition = (new THREE.Vector3(Math.cos(frequency), Math.sin(frequency), sunPosition)).multiplyScalar(16)
+  const period = 60
+  const gameTime = tick / period
+  const starPosition = (new THREE.Vector3(Math.cos(gameTime), Math.sin(gameTime), sunPosition)).multiplyScalar(32)
   sun.position.copy(player.camera.position)
   sun.position.add(starPosition)
   sun.target.position.copy(player.camera.position)
